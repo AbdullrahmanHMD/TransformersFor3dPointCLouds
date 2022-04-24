@@ -1,16 +1,45 @@
 from data_loader import ModelNet40
 import os
 
+from mpl_toolkits import mplot3d
+import numpy as np
+import matplotlib.pyplot as plt
 
-dataset_path = os.path.join(os.getcwd(), 'ModelNet40')
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+# -------------------------------------------------------------------------------------------
 
-train_loader = ModelNet40(dataset_path=dataset_path, test=False)
+def plot_pcu(vector):
+
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    
+    xdata = vector[:, 0]
+    ydata = vector[:, 1]
+    zdata = vector[:, 2]
+    
+    ax.scatter3D(xdata, ydata, zdata, cmap='Greens')
+    plt.show()
 
 
-data, label, label_txt = train_loader[0]
+modelnet40_path = os.path.join(os.getcwd(), 'dataset_path.txt')
+with open(modelnet40_path, 'r') as file:
+    modelnet40_path = file.readline()
 
+
+train_loader_fps = ModelNet40(dataset_path=modelnet40_path, test=False, sample='fps')
+train_loader_uniform = ModelNet40(dataset_path=modelnet40_path, test=False, sample='uni')
+
+
+data, label, label_txt = train_loader_fps[0]
+
+print(f'The shape of the point cloud: {data.shape}')
 print(f"Datapoint label: {label} | txt: {label_txt}")
 
+plot_pcu(data)
+
+data, _, _ = train_loader_uniform[0]
+
+plot_pcu(data)
 
 
 # NOTE: The below code is meant to test if all the images in the ModelNet40

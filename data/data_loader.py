@@ -8,18 +8,23 @@ from torch.utils import data
 
 class ModelNet40(data.Dataset):
     
-    def __init__(self, dataset_path, test=False, sample_size=1024):
+    def __init__(self, dataset_path, test=False, sample_size=1024, sample='fps'):
         """
         The constructor of the class. Once initialized, this constructor
         creates a list of the pathes of all the data points of ModelNet40.
         Args:
-            dataset_path (_type_): The absolute path of the dataset
+            dataset_path (str): The absolute path of the dataset
             test (bool, optional): A boolean to specify whether to load the
                                     test set or the train set.
             sample_size (int, optional): The size of the point cloud data
                                     will be reduced to.
+            sample (str, optional): A string that specifies the sampling method
+                                    . fps: Fartherst point sampling.
+                                    . uni: Uniform sampling.
+                                    . non: No sampling
         """
         self.SAMPLE_SIZE = sample_size
+        self.sample = sample
         self.data_points_paths = self.format_data(dataset_path=dataset_path, test=test)
             
     
@@ -37,8 +42,16 @@ class ModelNet40(data.Dataset):
         item_path, label, label_txt = self.data_points_paths[index]
         vector, _ = pcu.load_mesh_vf(item_path)
         
-        vector = self.sample_point_cloud(vector, self.SAMPLE_SIZE)
-        vector = self.rescale_to_unit_sphere(vector)
+        if self.sample == 'fps':
+            vector = self.fps(vector, self.SAMPLE_SIZE)
+            
+        elif self.sample == 'uni':
+            vector = self.uniform_sampling(vector, self.SAMPLE_SIZE)
+        
+        elif self.sample == 'non':
+            return vector, label, label_txt
+        
+        # vector = self.rescale_to_unit_sphere(vector)
         
         return vector, label, label_txt
     
@@ -83,7 +96,7 @@ class ModelNet40(data.Dataset):
         return np.array(data_points_list)
 
 
-    def sample_point_cloud(self, vec, sample_size=1024):
+    def uniform_sampling(self, vec, sample_size=1024):
         """
         Uniformly samples an input point cloud.
 
@@ -114,10 +127,56 @@ class ModelNet40(data.Dataset):
         
         return rescaled_vecs
     
-    
-            
-        
+    # ===================================================
+    # === Acknowledegments ==============================
 
+    # NOTE: The code below (fps method) was taken from the
+    # following resource:
+    #
+    # https://minibatchai.com/ai/2021/08/07/FPS.html
     
-    
-    
+    def fps(self, points, n_samples):
+        """
+        points: [N, 3] array containing the whole point cloud
+        n_samples: samples you want in the sampled point cloud typically << N 
+        """
+        points = np.array(points)
+        
+        # Represent the points by their indices in points
+        points_left = np.arange(len(points)) # [P]
+
+        # Initialise an array for the sampled indices
+        sample_inds = np.zeros(n_samples, dtype='int') # [S]
+
+        # Initialise distances to inf
+        dists = np.ones_like(points_left) * float('inf') # [P]
+
+        # Select a point from points by its index, save it
+        selected = 0
+        sample_inds[0] = points_left[selected]
+
+        # Delete selected 
+        points_left = np.delete(points_left, selected) # [P - 1]
+
+        # Iteratively select points for a maximum of n_samples
+        for i in range(1, n_samples):
+            # Find the distance to the last added point in selected
+            # and all the others
+            last_added = sample_inds[i-1]
+            
+            dist_to_last_added_point = (
+                (points[last_added] - points[points_left])**2).sum(-1) # [P - i]
+
+            # If closer, updated distances
+            dists[points_left] = np.minimum(dist_to_last_added_point, 
+                                            dists[points_left]) # [P - i]
+
+            # We want to pick the one that has the largest nearest neighbour
+            # distance to the sampled points
+            selected = np.argmax(dists[points_left])
+            sample_inds[i] = points_left[selected]
+
+            # Update points_left
+            points_left = np.delete(points_left, selected)
+
+        return points[sample_inds]
