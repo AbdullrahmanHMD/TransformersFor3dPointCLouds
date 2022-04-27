@@ -8,7 +8,7 @@ from torch.utils import data
 
 class ModelNet40(data.Dataset):
     
-    def __init__(self, dataset_path, test=False, sample_size=1024, sample='fps'):
+    def __init__(self, dataset_path, test=False, sample_size=1024, sampling='fps'):
         """
         The constructor of the class. Once initialized, this constructor
         creates a list of the pathes of all the data points of ModelNet40.
@@ -18,13 +18,15 @@ class ModelNet40(data.Dataset):
                                     test set or the train set.
             sample_size (int, optional): The size of the point cloud data
                                     will be reduced to.
-            sample (str, optional): A string that specifies the sampling method
+            sampling (str, optional): A string that specifies the sampling method
                                     . fps: Fartherst point sampling.
                                     . uni: Uniform sampling.
+                                    . uni-sph: Uniform sampling with scaling to
+                                                unit sphere.
                                     . non: No sampling
         """
         self.SAMPLE_SIZE = sample_size
-        self.sample = sample
+        self.sample = sampling
         self.data_points_paths = self.format_data(dataset_path=dataset_path, test=test)
             
     
@@ -49,11 +51,13 @@ class ModelNet40(data.Dataset):
             vector = self.uniform_sampling(vector, self.SAMPLE_SIZE)
         
         elif self.sample == 'non':
-            return vector, label, label_txt
+            return torch.tensor(vector), label, label_txt
         
-        # vector = self.rescale_to_unit_sphere(vector)
+        elif self.sample == 'uni-sph':
+            vector = self.uniform_sampling(vector, self.SAMPLE_SIZE)
+            vector = self.rescale_to_unit_sphere(vector)
         
-        return vector, label, label_txt
+        return torch.tensor(vector), label, label_txt
     
     def __len__(self):
         """

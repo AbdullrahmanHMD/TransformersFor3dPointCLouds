@@ -76,9 +76,10 @@ class PointCloudClassifier(nn.Module):
      
     def __init__(self, in_features, feature_dim, out_featuers, k_size, num_classes):
         super(PointCloudClassifier, self).__init__()
+        self.num_classes = num_classes
         self.encoder = PointEncoder(in_features, feature_dim, out_featuers)
-        self.max_pool = nn.MaxPool1d(k_size, stride=2)
-        self.avg_pool = nn.AvgPool1d(k_size, stride=2)
+        self.max_pool = nn.MaxPool1d(k_size)
+        self.avg_pool = nn.AvgPool1d(k_size)
         self.ff1 = None
         self.ff2 = FeedForward(256, 256, dropout=0.5)
         self.output_linear = nn.Linear(256, num_classes)
@@ -93,15 +94,9 @@ class PointCloudClassifier(nn.Module):
         self.ff1 = FeedForward(x.shape[1], 256, dropout=0.5)
         x = self.ff1(x)
         x = self.ff2(x)
-        x = self.output_linear(x)
-        x = nn.Softmax(dim=1)(x)
+        x = torch.flatten(x)
+        x = nn.Linear(x.shape[0], self.num_classes)(x)
+        x = nn.Softmax(dim=-1)(x)
         return x
    
-    
-X = torch.randn(6, 3)
-print(X)
-model = PointCloudClassifier(3, 4, 5, 2, 3)
-print(model(X)) 
-print(model(X).shape)
-        
     

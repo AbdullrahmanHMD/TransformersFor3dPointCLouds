@@ -9,7 +9,7 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 # -------------------------------------------------------------------------------------------
 
 def plot_pcu(vector):
-
+    
     fig = plt.figure()
     ax = plt.axes(projection='3d')
     
@@ -26,8 +26,8 @@ with open(modelnet40_path, 'r') as file:
     modelnet40_path = file.readline()
 
 
-train_loader_fps = ModelNet40(dataset_path=modelnet40_path, test=False, sample='fps')
-train_loader_uniform = ModelNet40(dataset_path=modelnet40_path, test=False, sample='uni')
+train_loader_fps = ModelNet40(dataset_path=modelnet40_path, test=False, sampling='fps')
+train_loader_uniform = ModelNet40(dataset_path=modelnet40_path, test=False, sampling='uni-sph')
 
 
 data, label, label_txt = train_loader_fps[0]
@@ -51,14 +51,14 @@ plot_pcu(data)
 # corrupted_data_indecies = []
 
 
-# for i in range(len(train_loader)):
+# for i in range(len(train_loader_fps)):
 # # for i in range(50):
 #     try:
-#         train_loader[i]
+#         train_loader_fps[i]
 #     except Exception as e:
 #         errors += 1
-#         print(f'WARNING: {train_loader.data_points_paths[i][0]} has errored out')
-#         corrupted_data.append(train_loader.data_points_paths[i][0])
+#         print(f'WARNING: {train_loader_fps.data_points_paths[i][0]} has errored out')
+#         corrupted_data.append(train_loader_fps.data_points_paths[i][0])
 #         corrupted_data_indecies.append(i)
 
 
