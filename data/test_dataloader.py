@@ -20,14 +20,14 @@ def plot_pcu(vector):
     ax.scatter3D(xdata, ydata, zdata, cmap='Greens')
     plt.show()
 
-
+    
 modelnet40_path = os.path.join(os.getcwd(), 'dataset_path.txt')
 with open(modelnet40_path, 'r') as file:
     modelnet40_path = file.readline()
 
 
-train_loader_fps = ModelNet40(dataset_path=modelnet40_path, test=False, sampling='fps')
-train_loader_uniform = ModelNet40(dataset_path=modelnet40_path, test=False, sampling='uni-sph')
+train_loader_fps = ModelNet40(dataset_path=modelnet40_path, test=False, sample_size=512, sampling='fps')
+# train_loader_uniform = ModelNet40(dataset_path=modelnet40_path, test=False, sampling='uni-sph')
 
 
 data, label, label_txt = train_loader_fps[0]
@@ -37,9 +37,9 @@ print(f"Datapoint label: {label} | txt: {label_txt}")
 
 plot_pcu(data)
 
-data, _, _ = train_loader_uniform[0]
+# data, _, _ = train_loader_uniform[0]
 
-plot_pcu(data)
+# plot_pcu(data)
 
 
 # NOTE: The below code is meant to test if all the images in the ModelNet40

@@ -56,8 +56,8 @@ class ModelNet40(data.Dataset):
         elif self.sample == 'uni-sph':
             vector = self.uniform_sampling(vector, self.SAMPLE_SIZE)
             vector = self.rescale_to_unit_sphere(vector)
-        
-        return torch.tensor(vector), label, label_txt
+            
+        return torch.tensor(vector), torch.tensor(label), label_txt
     
     def __len__(self):
         """
@@ -97,7 +97,7 @@ class ModelNet40(data.Dataset):
                 datum_path = os.path.join(datapoint_path, datum)
                 data_points_list.append((datum_path, i, obj))
                 
-        return np.array(data_points_list)
+        return data_points_list
 
 
     def uniform_sampling(self, vec, sample_size=1024):
