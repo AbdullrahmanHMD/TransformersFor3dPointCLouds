@@ -30,12 +30,17 @@ train_loader_fps = ModelNet40(dataset_path=modelnet40_path, test=False, sample_s
 # train_loader_uniform = ModelNet40(dataset_path=modelnet40_path, test=False, sampling='uni-sph')
 
 
-data, label, label_txt = train_loader_fps[0]
+for i, (x, y, _) in enumerate(train_loader_fps):
+    if len(x.size()) == 0:
+        print(train_loader_fps.data_points_paths[i])
 
-print(f'The shape of the point cloud: {data.shape}')
-print(f"Datapoint label: {label} | txt: {label_txt}")
 
-plot_pcu(data)
+# data, label, label_txt = train_loader_fps[0]
+
+# print(f'The shape of the point cloud: {data.shape}')
+# print(f"Datapoint label: {label} | txt: {label_txt}")
+
+# plot_pcu(data)
 
 # data, _, _ = train_loader_uniform[0]
 
