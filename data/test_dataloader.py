@@ -1,6 +1,7 @@
-from data_loader import ModelNet40
+from dataset import ModelNet40, collate_fn, arr
 import os
 
+from torch.utils.data import DataLoader
 from mpl_toolkits import mplot3d
 import numpy as np
 import matplotlib.pyplot as plt
@@ -26,13 +27,21 @@ with open(modelnet40_path, 'r') as file:
     modelnet40_path = file.readline()
 
 
-train_loader_fps = ModelNet40(dataset_path=modelnet40_path, test=False, sample_size=512, sampling='fps')
+model_net = ModelNet40(dataset_path=modelnet40_path, test=False, sample_size=512, sampling='fps')
+train_loader_fps = DataLoader(model_net, batch_size=1, shuffle=True, collate_fn=collate_fn )
+
+for x, y, _ in train_loader_fps:
+    print(y)
+    
+for a in arr:
+    print(a)
 # train_loader_uniform = ModelNet40(dataset_path=modelnet40_path, test=False, sampling='uni-sph')
 
 
-for i, (x, y, _) in enumerate(train_loader_fps):
-    if len(x.size()) == 0:
-        print(train_loader_fps.data_points_paths[i])
+# for x, y, _ in train_loader_fps:
+    # print(y)
+
+# print(train_loader_fps[:10])
 
 
 # data, label, label_txt = train_loader_fps[0]

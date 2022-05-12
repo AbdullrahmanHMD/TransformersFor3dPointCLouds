@@ -2,9 +2,13 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from tqdm import tqdm 
 import torch
 import numpy as np
+import os
+
+default_path = os.getcwd()
+default_path = os.path.join(default_path, 'parameters')
 
 def train(model, optimizer, scheduler, train_loader, criterion, epochs, verbose=False):
-    
+    device = get_device()
     total_loss = []
     steps = len(train_loader)
     
@@ -30,6 +34,8 @@ def train(model, optimizer, scheduler, train_loader, criterion, epochs, verbose=
             
         total_loss.append(epoch_loss)
         
+        export_parameters(model, f'param_epoch_{epoch}')
+        
         if verbose:
             print(f'epoch: {epoch} | loss: {epoch_loss}')
             
@@ -48,3 +54,9 @@ def get_device():
     else:
         device = torch.device('cpu')
     return device
+
+
+def export_parameters(model, param_name, path=default_path):
+    path = os.path.join(path, param_name)
+    with open(path, 'wb') as file:
+        torch.save({'model_state_dict': model.state_dict()}, file)
