@@ -7,14 +7,20 @@ import os
 default_path = os.getcwd()
 default_path = os.path.join(default_path, 'parameters')
 
-def train(model, optimizer, scheduler, train_loader, criterion, epochs, verbose=False):
+def train(model, optimizer, scheduler, train_loader, criterion, epochs, save_params=False, verbose=False):
     device = get_device()
     total_loss = []
+    
     steps = len(train_loader)
+    model.train()
     
     for epoch in range(epochs):
         epoch_loss = 0
-        for x, y, _ in train_loader:
+        for point in train_loader:
+            if point == None:
+                continue
+            
+            x, y, _ = point
             optimizer.zero_grad()
             
             yhat = model(x.float())
@@ -33,13 +39,13 @@ def train(model, optimizer, scheduler, train_loader, criterion, epochs, verbose=
             
             
         total_loss.append(epoch_loss)
-        
-        export_parameters(model, f'param_epoch_{epoch}')
+        if save_params:
+            export_parameters(model, f'param_epoch_{epoch}')
         
         if verbose:
             print(f'epoch: {epoch} | loss: {epoch_loss}')
             
-    scheduler = CosineAnnealingLR(optimizer, steps)
+        scheduler = CosineAnnealingLR(optimizer, steps)
     
     if verbose:
         print(f'total loss: {total_loss}')

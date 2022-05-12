@@ -157,6 +157,9 @@ class ModelNet40(data.Dataset):
         """
         points = np.array(points)
         
+        if points.shape[0] <= n_samples:
+            return points
+        
         # Represent the points by their indices in points
         points_left = np.arange(len(points)) # [P]
 
