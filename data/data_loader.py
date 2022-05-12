@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-import point_cloud_utils as pcu
+import utils as pcu
 
 import os
 from torch.utils import data

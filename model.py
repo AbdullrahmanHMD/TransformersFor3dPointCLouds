@@ -6,9 +6,13 @@ import numpy as np
 
 class FeedForward(nn.Module):
     
-    def __init__(self, in_features, out_features, dropout=0):
+    def __init__(self, in_features, out_features, dropout=0, bias=None):
         super(FeedForward, self).__init__()
         self.linear_layer = nn.Linear(in_features, out_features)
+        nn.init.kaiming_(self.linear_layer.weight.data)
+        if bias is not None:
+            self.linear_layer.bias.data.fill_(0.1)
+                    
         self.batch_norm = nn.LayerNorm(out_features)
         self.relu = nn.ReLU()
         self.dropout = dropout
@@ -35,6 +39,16 @@ class Attention(nn.Module):
         self.W_V = nn.Linear( self.feature_dim,  self.feature_dim, bias=bias)
         self.W_O = nn.Linear( self.feature_dim, self.feature_dim, bias=bias)
         self.softmax = nn.Softmax(dim=1)
+        self.init_weights()
+        
+        
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.kaiming_(m.weight.data)
+                if m.bias is not None:
+                    m.bias.data.fill_(0.1)
+                    
         
     def forward(self, x):
         

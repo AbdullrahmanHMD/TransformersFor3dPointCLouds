@@ -1,12 +1,24 @@
 from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.autograd import Variable
 from tqdm import tqdm 
 import torch
 import numpy as np
 
-def train(model, optimizer, scheduler, train_loader, criterion, epochs, verbose=False):
+
+def check_batch_accuracy(out, target,eps=1e-7):
+    b, c = out.shape
+    with torch.no_grad():
+        _, pred = out.max(-1) 
+        correct = np.sum(np.equal(pred.cpu().numpy(), target.cpu().numpy()))
+    return correct, np.float(correct) / (b)
+
+
+def train(model, optimizer, scheduler, train_loader, criterion, epochs, device, verbose=False):
     
     total_loss = []
     steps = len(train_loader)
+    model.train()
+    model = model.to(device=device)
     
     for epoch in range(epochs):
         epoch_loss = 0
