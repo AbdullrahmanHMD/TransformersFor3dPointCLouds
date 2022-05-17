@@ -51,12 +51,7 @@ class ModelNet40(data.Dataset):
             return None
                 
         if self.sample == 'fps':
-            try:
-                vector = self.fps(vector, self.SAMPLE_SIZE)
-            except ValueError:
-                # arr.append(self.data_points_paths[index])
-                return None
-
+            vector = self.fps(vector, self.SAMPLE_SIZE)
             
         elif self.sample == 'uni':
             vector = self.uniform_sampling(vector, self.SAMPLE_SIZE)
