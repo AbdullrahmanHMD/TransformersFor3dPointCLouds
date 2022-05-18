@@ -11,10 +11,15 @@ def train(model, optimizer, scheduler, train_loader, criterion, epochs, save_par
     device = get_device()
     total_loss = []
     
+    # Loading the model from checkpoint:
+    parameters = os.listdir(default_path)
+    last_param = parameters[-1]
+    model.load_state_dict(get_model_state_dict(last_param))
+
     steps = len(train_loader)
     model.train()
     
-    for epoch in range(epochs):
+    for epoch in range(epochs - len(parameters), epochs):
         epoch_loss = 0
         for point in train_loader:
             if point == None:
@@ -45,7 +50,7 @@ def train(model, optimizer, scheduler, train_loader, criterion, epochs, save_par
         if verbose:
             print(f'epoch: {epoch} | loss: {epoch_loss}')
             
-        scheduler = CosineAnnealingLR(optimizer, steps)
+        # scheduler = CosineAnnealingLR(optimizer, steps)
     
     if verbose:
         print(f'total loss: {total_loss}')
@@ -66,3 +71,10 @@ def export_parameters(model, param_name, path=default_path):
     path = os.path.join(path, param_name)
     with open(path, 'wb') as file:
         torch.save({'model_state_dict': model.state_dict()}, file)
+
+
+def get_model_state_dict(param_name, path=default_path):
+    path = os.path.join(path, param_name)
+    with open(path, 'rb') as file:
+        model_state_dict = torch.load(file)['model_state_dict']
+    return model_state_dict
