@@ -51,7 +51,10 @@ class ModelNet40(data.Dataset):
             return None
                 
         if self.sample == 'fps':
+            vector_size = vector.shape
             vector = self.fps(vector, self.SAMPLE_SIZE)
+            if vector.shape == vector_size:
+                return None
             
         elif self.sample == 'uni':
             vector = self.uniform_sampling(vector, self.SAMPLE_SIZE)

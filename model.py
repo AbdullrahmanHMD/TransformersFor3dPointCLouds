@@ -83,11 +83,11 @@ class PointCloudClassifier(nn.Module):
         self.max_pool = nn.MaxPool1d(k_size)
         self.avg_pool = nn.AvgPool1d(k_size)
         
-        self.ff1 = FeedForward(16, 256, dropout=0.5)
-        self.ff2 = FeedForward(124, 124, dropout=0.5)
+        self.ff1 = FeedForward(16, 128, dropout=0.5)
+        self.ff2 = FeedForward(128, 128, dropout=0.5)
         
-        self.output_linear = nn.Linear(124, num_classes)
-        self.linear = nn.Linear(124 * 124, self.num_classes)
+        self.output_linear = nn.Linear(128, num_classes)
+        self.linear = nn.Linear(128 * 128, self.num_classes)
         
 
     def forward(self, x):

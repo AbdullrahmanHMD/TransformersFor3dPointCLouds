@@ -8,7 +8,7 @@ default_path = os.path.join(default_path, 'parameters')
 def evaluate(model, validation_loader, epochs, verbose=False):
     model.eval()
     total_accuracy = []
-    for epoch in range(epochs):
+    for epoch in range(1, epochs + 1):
         model.load_state_dict(get_model_state_dict(f'param_epoch_{epoch}'))
         correct = 0
 

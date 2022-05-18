@@ -3,24 +3,33 @@ from tqdm import tqdm
 import torch
 import numpy as np
 import os
+import time
 
 default_path = os.getcwd()
 default_path = os.path.join(default_path, 'parameters')
 
-def train(model, optimizer, scheduler, train_loader, criterion, epochs, save_params=False, verbose=False):
+def train(model, optimizer, scheduler, train_loader, criterion, epochs, save_params=False, verbose=False, load_model=False):
     device = get_device()
     total_loss = []
     
     # Loading the model from checkpoint:
-    parameters = os.listdir(default_path)
-    last_param = parameters[-1]
-    model.load_state_dict(get_model_state_dict(last_param))
-
+    if load_model:
+        parameters = os.listdir(default_path)
+        if len(parameters) > 0:
+            last_param = parameters[-1]
+            model.load_state_dict(get_model_state_dict(last_param))
+            epoch_start = epochs - (epochs - len(parameters))
+        else:
+            epoch_start = 0
+    else:
+        epoch_start = 0
+    
     steps = len(train_loader)
     model.train()
-    
-    for epoch in range(epochs - len(parameters), epochs):
+
+    for epoch in range(epoch_start, epochs):
         epoch_loss = 0
+        epoch_tic = time.time()
         for point in train_loader:
             if point == None:
                 continue
@@ -28,6 +37,9 @@ def train(model, optimizer, scheduler, train_loader, criterion, epochs, save_par
             x, y, _ = point
             optimizer.zero_grad()
             
+            x.to(device=device)
+            y.to(device=device)
+
             yhat = model(x.float())
             yhat = yhat.view(1, -1)
             y = y.view(-1)
@@ -41,19 +53,22 @@ def train(model, optimizer, scheduler, train_loader, criterion, epochs, save_par
             
             if verbose:
                 print(f'learning rate: {scheduler.get_lr()[0]}')
-            
-            
+
         total_loss.append(epoch_loss)
         if save_params:
             export_parameters(model, f'param_epoch_{epoch}')
         
-        if verbose:
-            print(f'epoch: {epoch} | loss: {epoch_loss}')
-            
+        # if verbose:
+        print(f'epoch: {epoch} | loss: {epoch_loss}')
+        epoch_toc = time.time()
+
+        print(f'Epoch time: {epoch_toc - epoch_tic}')
+
         # scheduler = CosineAnnealingLR(optimizer, steps)
-    
     if verbose:
         print(f'total loss: {total_loss}')
+
+    print(f'Final loss {total_loss[-1]}')
     
     return np.array(total_loss)
 
