@@ -10,6 +10,13 @@ import torch
 arr = []
 
 class ModelNet40(data.Dataset):
+    CLASSES = ['airplane', 'bathtub', 'bed', 'bench', 'bookshelf', 'bottle', 'bowl', 'car'
+               , 'chair', 'cone', 'cup', 'curtain', 'desk', 'door', 'dresser', 'flower_pot'
+               , 'glass_box', 'guitar', 'keyboard', 'lamp', 'laptop', 'mantel', 'monitor'
+               , 'night_stand', 'person', 'piano', 'plant', 'radio', 'range_hood', 'sink', 'sofa'
+               , 'stairs', 'stool', 'table', 'tent', 'toilet', 'tv_stand', 'vase', 'wardrobe'
+               , 'xbox'
+                ]
     
     def __init__(self, dataset_path, test=False, sample_size=1024, sampling='fps'):
         """
@@ -30,7 +37,12 @@ class ModelNet40(data.Dataset):
         """
         self.SAMPLE_SIZE = sample_size
         self.sample = sampling
+        self.data_points_labels = []
         self.data_points_paths = self.format_data(dataset_path=dataset_path, test=test)
+        
+        # ----------------------------------------------------------------------------------
+        
+        self.class_weights = self.calculate_class_weights()
             
     
     def __getitem__(self, index):
@@ -105,6 +117,7 @@ class ModelNet40(data.Dataset):
             for datum in data_points:
                 datum_path = os.path.join(datapoint_path, datum)
                 data_points_list.append((datum_path, i, obj))
+                self.data_points_labels.append(i)
                 
         return data_points_list
 
@@ -139,6 +152,30 @@ class ModelNet40(data.Dataset):
         rescaled_vecs = vec * (R / norms)
         
         return rescaled_vecs
+    
+    def plot_class_distribution(self):
+        import matplotlib.pyplot as plt
+        
+        bin_count = np.bincount(self.data_points_labels)
+
+        x = self.CLASSES
+        y = bin_count
+
+        fig, ax = plt.subplots()
+        bars = ax.barh(x, y)
+        ax.bar_label(bars)
+        
+        plt.show()
+        
+    def calculate_class_weights(self):
+        
+        bin_count = np.bincount(self.data_points_labels)
+        dataset_size = len(self.data_points_labels)
+        
+        class_weights = [1 - (class_/dataset_size) for class_ in bin_count]
+        
+        return class_weights
+    
     
     # ===================================================
     # === Acknowledegments ==============================
