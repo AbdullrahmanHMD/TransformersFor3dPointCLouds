@@ -30,7 +30,7 @@ def train(model, optimizer, scheduler, train_loader, criterion, epochs, save_par
     for epoch in range(epoch_start, epochs):
         epoch_loss = 0
         epoch_tic = time.time()
-        for point in train_loader:
+        for point in tqdm(train_loader):
             if point == None:
                 continue
             
@@ -41,9 +41,7 @@ def train(model, optimizer, scheduler, train_loader, criterion, epochs, save_par
             y.to(device=device)
 
             yhat = model(x.float())
-            yhat = yhat.view(1, -1)
-            y = y.view(-1)
-            
+ 
             loss = criterion(yhat, y)
             epoch_loss += loss.item()
 

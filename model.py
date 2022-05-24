@@ -100,7 +100,7 @@ class PointCloudClassifier(nn.Module):
         x = self.ff2(x)
         x = torch.flatten(x)
         x = self.linear(x)
-        x = nn.Softmax(dim=-1)(x)
+        # x = nn.Softmax(dim=-1)(x)
         return x
    
     
