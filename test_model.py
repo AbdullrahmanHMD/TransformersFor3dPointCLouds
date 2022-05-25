@@ -1,5 +1,5 @@
 from model import *
-from data.data_loader import ModelNet40
+from data.dataset import ModelNet40
 import torch
 import os
 

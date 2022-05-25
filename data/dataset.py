@@ -1,12 +1,22 @@
+from tkinter import E
 import torch
 import numpy as np
 import point_cloud_utils as pcu
 
 import os
 from torch.utils import data
+import torch
 
+arr = []
 
 class ModelNet40(data.Dataset):
+    CLASSES = ['airplane', 'bathtub', 'bed', 'bench', 'bookshelf', 'bottle', 'bowl', 'car'
+               , 'chair', 'cone', 'cup', 'curtain', 'desk', 'door', 'dresser', 'flower_pot'
+               , 'glass_box', 'guitar', 'keyboard', 'lamp', 'laptop', 'mantel', 'monitor'
+               , 'night_stand', 'person', 'piano', 'plant', 'radio', 'range_hood', 'sink', 'sofa'
+               , 'stairs', 'stool', 'table', 'tent', 'toilet', 'tv_stand', 'vase', 'wardrobe'
+               , 'xbox'
+                ]
     
     def __init__(self, dataset_path, test=False, sample_size=1024, sampling='fps'):
         """
@@ -27,7 +37,12 @@ class ModelNet40(data.Dataset):
         """
         self.SAMPLE_SIZE = sample_size
         self.sample = sampling
+        self.data_points_labels = []
         self.data_points_paths = self.format_data(dataset_path=dataset_path, test=test)
+        
+        # ----------------------------------------------------------------------------------
+        
+        self.class_weights = self.calculate_class_weights()
             
     
     def __getitem__(self, index):
@@ -44,14 +59,20 @@ class ModelNet40(data.Dataset):
         item_path, label, label_txt = self.data_points_paths[index]
         vector, _ = pcu.load_mesh_vf(item_path)
         
+        if vector.size == 0:
+            return None
+                
         if self.sample == 'fps':
+            vector_size = vector.shape
             vector = self.fps(vector, self.SAMPLE_SIZE)
+            if vector.shape == vector_size:
+                return None
             
         elif self.sample == 'uni':
             vector = self.uniform_sampling(vector, self.SAMPLE_SIZE)
         
         elif self.sample == 'non':
-            return torch.tensor(vector), label, label_txt
+            return torch.tensor(vector), torch.tensor(label), label_txt
         
         elif self.sample == 'uni-sph':
             vector = self.uniform_sampling(vector, self.SAMPLE_SIZE)
@@ -96,6 +117,7 @@ class ModelNet40(data.Dataset):
             for datum in data_points:
                 datum_path = os.path.join(datapoint_path, datum)
                 data_points_list.append((datum_path, i, obj))
+                self.data_points_labels.append(i)
                 
         return data_points_list
 
@@ -131,6 +153,30 @@ class ModelNet40(data.Dataset):
         
         return rescaled_vecs
     
+    def plot_class_distribution(self):
+        import matplotlib.pyplot as plt
+        
+        bin_count = np.bincount(self.data_points_labels)
+
+        x = self.CLASSES
+        y = bin_count
+
+        fig, ax = plt.subplots()
+        bars = ax.barh(x, y)
+        ax.bar_label(bars)
+        
+        plt.show()
+        
+    def calculate_class_weights(self):
+        
+        bin_count = np.bincount(self.data_points_labels)
+        dataset_size = len(self.data_points_labels)
+        
+        class_weights = [1 - (class_/dataset_size) for class_ in bin_count]
+        
+        return class_weights
+    
+    
     # ===================================================
     # === Acknowledegments ==============================
 
@@ -145,6 +191,9 @@ class ModelNet40(data.Dataset):
         n_samples: samples you want in the sampled point cloud typically << N 
         """
         points = np.array(points)
+        
+        if points.shape[0] <= n_samples:
+            return points
         
         # Represent the points by their indices in points
         points_left = np.arange(len(points)) # [P]
@@ -184,3 +233,7 @@ class ModelNet40(data.Dataset):
             points_left = np.delete(points_left, selected)
 
         return points[sample_inds]
+    
+def collate_fn(batch):
+    batch = list(filter(lambda x: x is not None, batch))
+    return torch.utils.data.dataloader.default_collate(batch)
