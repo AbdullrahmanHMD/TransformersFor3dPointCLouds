@@ -3,7 +3,6 @@ import torch.nn as nn
 import numpy as np
 
 
-
 class FeedForward(nn.Module):
     
     def __init__(self, in_features, out_features, dropout=0, bias=False):
@@ -21,15 +20,16 @@ class FeedForward(nn.Module):
             self.dropout_layer = nn.Dropout(p=self.dropout)
         
     def forward(self, x):
-        
-        x = self.relu(self.batch_norm(self.linear_layer(x)))
+
+        x = self.linear_layer(x)
+        x = self.batch_norm(x)
+        x = self.relu(x)
+
         if self.dropout_layer != None:
             x = self.dropout_layer(x)
         return x 
-        
-        
-        
-        
+
+    
 class Attention(nn.Module):
     def __init__(self, feature_dim, bias):
         super(Attention, self).__init__()
@@ -56,12 +56,10 @@ class Attention(nn.Module):
         
         Q, K, V = self.W_Q(x), self.W_K(x), self.W_V(x)
 
-        allignment = self.softmax(torch.mm(Q, torch.t(K)) / (self.model_dim ** 0.5))
-        atten = torch.mm( allignment, V)
+        allignment = self.softmax(torch.matmul(Q, K.permute(0, -1, 1)) / (self.model_dim ** 0.5))
+        atten = torch.matmul(allignment, V)
         atten = self.W_O(atten)
         return atten
-
-
     
     
 class PointEncoder(nn.Module):
@@ -73,25 +71,25 @@ class PointEncoder(nn.Module):
         self.in_features = in_features
         self.out_features = out_featuers
         
+        print(f"self.in_features: {self.in_features} | feature_dim: {self.feature_dim}")
         self.embedding = nn.Sequential(FeedForward(self.in_features, self.feature_dim),
                                        FeedForward(self.feature_dim, self.feature_dim)
                                        )
         self.attention = Attention(self.feature_dim, bias=bias)
         
     def forward(self, x):
-        
         x = self.embedding(x)
+
         atten_1 = self.attention(x)
         atten_2 = self.attention(atten_1)
         atten_3 = self.attention(atten_2)
         atten_4 = self.attention(atten_3)
+
         out = torch.cat((atten_1, atten_2, atten_3, atten_4), dim=1)
-        out = FeedForward(out.shape[1], self.out_features)(out)
+        out = FeedForward(out.shape[-1], self.out_features)(out)
         return out
 
     
-    
-
 class PointDecoder(nn.Module):
     
     def __init__(self, in_features, out_features, num_classes, dropout=0):
@@ -101,45 +99,36 @@ class PointDecoder(nn.Module):
         self.ff1 = FeedForward(self._in_features, self._out_features , dropout=dropout)
         self.ff2 = FeedForward(self._out_features, self._out_features, dropout=dropout)
         self.linear = nn.Linear(self._out_features, num_classes)
-        self.softmax = nn.Softmax(dim=-1)
         
     
     def forward(self, x):
-        
         x = self.ff2(self.ff1(x))
-        print(x.shape)
-        x = self.softmax(self.linear(x))
-        print(x.shape)
+        x = self.linear(x)
         return x
 
     
-    
-    
-    
 class PointCloudClassifier(nn.Module):
      
-    def __init__(self, in_features, feature_dim, out_features, k_size, num_classes, dropout=0):
+    def __init__(self, in_features, feature_dim, out_features, decoder_features, k_size, num_classes, dropout=0):
         super(PointCloudClassifier, self).__init__()
         
         self.num_classes = num_classes
-        self.encoder = PointEncoder(in_features, feature_dim, out_features)
+        self.encoder = PointEncoder(in_features, feature_dim, out_features) # 3 x 128 x 1024
         
         self.max_pool = nn.MaxPool1d(k_size)
         self.avg_pool = nn.AvgPool1d(k_size)
         
-        self.decoder_out_features = 256
+        self.decoder_out_features = decoder_features
         self.dropout = dropout
-#         self.decoder = PointDecoder(self.decoder_in_features, self.decoder_out_features, num_classes, dropout=dropout)
+        # self.decoder = PointDecoder(self.decoder_in_features, self.decoder_out_features, num_classes, dropout=self.dropout)
 
         
 
     def forward(self, x):
-        
         x = self.encoder(x)
-        x = torch.cat((self.max_pool(x), self.avg_pool(x)), axis=1)
-        x = PointDecoder(x.shape[1], self.decoder_out_features, self.num_classes, dropout=self.dropout)(x)
-#         x = torch.flatten(x)
-#         print(x.shape)
+        x = torch.cat((self.max_pool(x), self.avg_pool(x)), axis=-1)
+        x = torch.flatten(x, start_dim=1)
+        x = PointDecoder(x.shape[-1], self.decoder_out_features, self.num_classes, dropout=self.dropout)(x)
         return x
    
     

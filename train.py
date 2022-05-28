@@ -36,12 +36,12 @@ def train(model, optimizer, scheduler, train_loader, criterion, epochs, save_par
             
             x, y, _ = point
             optimizer.zero_grad()
-            
+
             x.to(device=device)
             y.to(device=device)
-
+            
             yhat = model(x.float())
- 
+
             loss = criterion(yhat, y)
             epoch_loss += loss.item()
 
@@ -72,11 +72,9 @@ def train(model, optimizer, scheduler, train_loader, criterion, epochs, save_par
 
 
 def get_device():
-    device = None
+    device = 'cpu'
     if torch.cuda.is_available():
-        device = torch.device('cuda')
-    else:
-        device = torch.device('cpu')
+        device = 'cuda'
     return device
 
 
