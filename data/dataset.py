@@ -38,7 +38,7 @@ class ModelNet40(data.Dataset):
         self.SAMPLE_SIZE = sample_size
         self.sample = sampling
         self.data_points_labels = []
-        self.data_points_paths = self.format_data(dataset_path=dataset_path, test=test)
+        self.data_points_paths, self.labels, self.label_txt = self.format_data(dataset_path=dataset_path, test=test)
         
         # ----------------------------------------------------------------------------------
         
@@ -56,7 +56,7 @@ class ModelNet40(data.Dataset):
             label (int):        The label mapped to an integer
             label_txt (str):    The label as a text.
         """
-        item_path, label, label_txt = self.data_points_paths[index]
+        item_path, label, label_txt = self.data_points_paths[index], self.labels[index], self.label_txt[index]
         vector, _ = pcu.load_mesh_vf(item_path)
         
         if vector.size == 0:
@@ -103,6 +103,8 @@ class ModelNet40(data.Dataset):
         """
         objects = os.listdir(dataset_path)
         data_points_list = []
+        labels = []
+        labels_txt = []
         
         for i, obj in enumerate(objects):
             datapoint_path = os.path.join(dataset_path, obj)
@@ -116,10 +118,11 @@ class ModelNet40(data.Dataset):
             
             for datum in data_points:
                 datum_path = os.path.join(datapoint_path, datum)
-                data_points_list.append((datum_path, i, obj))
-                self.data_points_labels.append(i)
+                data_points_list.append(datum_path)
+                labels.append(i)
+                labels_txt.append(obj)
                 
-        return data_points_list
+        return data_points_list, labels, labels_txt
 
 
     def uniform_sampling(self, vec, sample_size=1024):
@@ -169,14 +172,22 @@ class ModelNet40(data.Dataset):
         
     def calculate_class_weights(self):
         
-        bin_count = np.bincount(self.data_points_labels)
-        dataset_size = len(self.data_points_labels)
+        bin_count = np.bincount(self.labels)
+        dataset_size = len(self.labels)
         
         class_weights = [1 - (class_/dataset_size) for class_ in bin_count]
         
         return class_weights
     
     
+    def class_indicies_distribution(self):
+        indicies_distribution = {}
+        num_classes = np.unique(self.labels)
+        for class_ in num_classes:
+            mask = class_ == self.labels
+            indicies_distribution[class_] = [i for i, x in enumerate(mask) if x]
+        return indicies_distribution
+
     # ===================================================
     # === Acknowledegments ==============================
 
