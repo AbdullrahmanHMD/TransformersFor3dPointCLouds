@@ -22,7 +22,7 @@ class LBRNN(nn.Module):
         
         self.linear_layer = nn.Linear(self.in_features, self.out_features, bias=self.bias)
         self.batch_norm = nn.LayerNorm(self.out_features)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU()
         self.dropout_layer = None
         
         nn.init.kaiming_normal_(self.linear_layer.weight.data)
@@ -46,7 +46,7 @@ class LBRNN(nn.Module):
 # ############################################################### #
 
 class Attention(nn.Module):
-    def __init__(self, feature_dim, num_heads, eps=1e-6, bias=False):
+    def __init__(self, feature_dim, num_heads, eps=1e-9, bias=False):
         super(Attention, self).__init__()
         
         self.feature_dim = feature_dim
@@ -86,7 +86,7 @@ class Attention(nn.Module):
         scale_factor = 1 / (self.head_dim ** 0.5)
         
         out = self.softmax(out * scale_factor)
-        out /= out.sum(axis=1, keepdim=True) + self.eps
+        out = out / out.sum(axis=1, keepdim=True) + self.eps
         
         atten = torch.matmul(out, V)
         atten = atten.contiguous().view(b, n, -1)
@@ -111,15 +111,18 @@ class TransformerBlock(nn.Module):
     
     def forward(self, x, mask=None):
         
-        x = x + self.bn1(self.attention(x, mask=mask))
-        x = x + self.bn2(self.feedforward(x))
+        x = self.attention(x, mask=mask)
+        x = x + self.bn1(x)
+        x = self.feedforward(x)
+        x = x + self.bn2(x)
+
         return x
         
         
 
 class Encoder(nn.Module):
     
-    def __init__(self, input_size, input_dims, embed_dim, out_dims, num_layers, num_heads, num_classes, device, dropout=0):
+    def __init__(self, input_size, input_dims, embed_dim, out_dims, num_layers, num_heads, num_classes, dropout=0):
         super(Encoder, self).__init__()
         
         self.embedding = nn.Sequential(LBRNN(input_dims, embed_dim),
@@ -176,12 +179,11 @@ class Encoder(nn.Module):
 
 
 
-import tensorflow as tf
-import cv2 as cv
-X = torch.randn(1, 1024, 3)
-encoder = Encoder(1024, 3, 128, 8, 4, 1, num_classes=40, dropout=0.5, device='cuda')
-print(encoder(X).shape)
-e = nn.Sequential(LBRNN(3, 128),
-                  LBRNN(128, 128))
-em = TransformerBlock(128, 1, 8)
-print(em(em(e(X))).shape)
+# import cv2 as cv
+# X = torch.randn(1, 1024, 3)
+# encoder = Encoder(1024, 3, 128, 8, 4, 1, num_classes=40, dropout=0.5, device='cuda')
+# print(encoder(X).shape)
+# e = nn.Sequential(LBRNN(3, 128),
+#                   LBRNN(128, 128))
+# em = TransformerBlock(128, 1, 8)
+# print(em(em(e(X))).shape)

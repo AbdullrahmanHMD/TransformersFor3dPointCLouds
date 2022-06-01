@@ -8,68 +8,65 @@ import time
 default_path = os.getcwd()
 default_path = os.path.join(default_path, 'parameters')
 
-def train(model, optimizer, scheduler, train_loader, criterion, epochs, save_params=False, verbose=False, load_model=False):
-    device = get_device()
-    total_loss = []
-    
-    # Loading the model from checkpoint:
-    if load_model:
-        parameters = os.listdir(default_path)
-        if len(parameters) > 0:
-            last_param = parameters[-1]
-            model.load_state_dict(get_model_state_dict(last_param))
-            epoch_start = epochs - (epochs - len(parameters))
-        else:
-            epoch_start = 0
-    else:
-        epoch_start = 0
-    
-    steps = len(train_loader)
-    model.train()
 
-    for epoch in range(epoch_start, epochs):
+def train(model, optimizer, scheduler, train_loader, validation_loader, criterion, epochs, save_params=False, verbose=False, load_model=False):
+    
+    epoch_times = []
+    total_loss = []    
+    model.train()
+    
+    accuracies_validation = []
+    accuracies_train = []
+    device = get_device()
+    
+    steps = 10
+    for epoch in range(epochs):
         epoch_loss = 0
         epoch_tic = time.time()
         for point in tqdm(train_loader):
-            if point == None:
+            
+            if point:
                 continue
-            
-            x, y, _ = point
+
             optimizer.zero_grad()
-
-            x.to(device=device)
-            y.to(device=device)
             
-            yhat = model(x.float())
-
+            x = x.to(device)
+            y = y.to(device)
+            
+            yhat = model(x)
+            
             loss = criterion(yhat, y)
             epoch_loss += loss.item()
-
+            
             loss.backward()
             optimizer.step()
+    
+            _, label = torch.max(yhat, 1)
+            num_correct += (y == label).sum().item()
+
+        
+        print('Evaluating epoch...', flush=True)
+        train_accuracy = 100 * num_correct / len(train_loader) * train_loader.batch_size
+        test_accuracy = evaluate(model, validation_loader)
+
+        if scheduler != None:
+            lr = optimizer.param_groups[0]['lr']
+            print(f'Learning rate: {lr}')
             scheduler.step()
-            
-            if verbose:
-                print(f'learning rate: {scheduler.get_lr()[0]}')
+
+        accuracies_train.append(train_accuracy)
+        accuracies_validation.append(test_accuracy)
 
         total_loss.append(epoch_loss)
-        if save_params:
-            export_parameters(model, f'param_epoch_{epoch}')
         
-        # if verbose:
-        print(f'epoch: {epoch} | loss: {epoch_loss}')
         epoch_toc = time.time()
+        epoch_time = epoch_toc - epoch_tic
+        epoch_times.append(epoch_time)
 
-        print(f'Epoch time: {epoch_toc - epoch_tic}')
-
-        # scheduler = CosineAnnealingLR(optimizer, steps)
-    if verbose:
-        print(f'total loss: {total_loss}')
-
-    print(f'Final loss {total_loss[-1]}')
+        print(f'Epoch: {epoch} | Loss: {epoch_loss:.2f} | Train accuracy: {train_accuracy} | Validation Accuracy: {test_accuracy}| Runtime: {epoch_time:.2f} seconds')
     
-    return np.array(total_loss)
-
+    return total_loss, epoch_times, accuracies_train, accuracies_validation
+    
 
 def get_device():
     device = 'cpu'
