@@ -30,12 +30,20 @@ with open(modelnet40_path, 'r') as file:
 model_net = ModelNet40(dataset_path=modelnet40_path, test=False, sample_size=512, sampling='fps')
 train_loader_fps = DataLoader(model_net, batch_size=1, shuffle=True, collate_fn=collate_fn )
 
-for x, y, _ in train_loader_fps:
-    print(y)
+# for x, y, _ in train_loader_fps:
+    # print(y)
     
-for a in arr:
-    print(a)
+# for a in arr:
+    # print(a)
 # train_loader_uniform = ModelNet40(dataset_path=modelnet40_path, test=False, sampling='uni-sph')
+
+index = model_net.class_indicies_distribution()[0][0]
+
+data, _, _ = model_net[index]
+
+
+print(data.size(), flush=True)
+plot_pcu(data)
 
 
 # for x, y, _ in train_loader_fps:

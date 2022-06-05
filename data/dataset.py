@@ -1,4 +1,3 @@
-from tkinter import E
 import torch
 import numpy as np
 import point_cloud_utils as pcu
@@ -17,6 +16,8 @@ class ModelNet40(data.Dataset):
                , 'stairs', 'stool', 'table', 'tent', 'toilet', 'tv_stand', 'vase', 'wardrobe'
                , 'xbox'
                 ]
+    
+    CLASS_MAPPING = dict(zip(CLASSES, range(0, len(CLASSES))))
     
     def __init__(self, dataset_path, test=False, sample_size=1024, sampling='fps'):
         """
