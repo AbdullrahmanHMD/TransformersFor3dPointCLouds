@@ -64,8 +64,8 @@ def eval_2(model, test_loader):
     num_correct = 0
     for x, y, _ in tqdm(test_loader):
             
-        x.to(device)
-        y.to(device)
+        x = x.to(device)
+        y = y.to(device)
             
         yhat = model(x.float())
         _, label = torch.max(yhat, 1)

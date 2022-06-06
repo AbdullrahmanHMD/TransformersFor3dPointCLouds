@@ -1,5 +1,4 @@
 import glob
-from importlib.metadata import distribution
 import os
 from random import sample
 import numpy as np
@@ -112,7 +111,7 @@ class NormalizedModelNet40(Dataset):
     
     def class_indicies_distribution(self):
         indicies_distribution = {}
-        labels = self.labels.reshape[-1]
+        labels = self.labels.reshape(-1)
         num_classes = np.unique(labels)
         for class_ in num_classes:
             mask = class_ == labels
