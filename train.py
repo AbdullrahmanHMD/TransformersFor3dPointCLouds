@@ -51,9 +51,7 @@ def train(model, optimizer, scheduler, train_loader, validation_loader, criterio
             num_correct += (y == label).sum().item()
             
         total_loss.append(epoch_loss)
-        
-        mean_loss = sum(total_loss) / len(total_loss)
-        scheduler.step(mean_loss)      
+        scheduler.step(epoch_loss)      
         
         print('Evaluating epoch...', flush=True)
         train_accuracy = 100 * num_correct / (len(train_loader) * train_loader.batch_size)
