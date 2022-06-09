@@ -61,6 +61,20 @@ class NormalizedModelNet40(Dataset):
         return data, self.labels[index], self.CLASS_MAPPING[self.labels[index]]
     
     
+    def class_indicies(self, class_num):
+        # Returns the instances indicies of a given class.
+        indicies = [i for i, x in enumerate(self.labels) if x == class_num]
+        return indicies
+    
+
+    def augmentation_count(self):
+        # Returns the number of needed augmentation for each class.
+        data_dist = np.bincount(self.labels)
+        max_instance = np.max(data_dist)
+        
+        return max_instance - data_dist
+
+    
     def class_distribution(self):
         distribution = np.bincount(self.labels)
         return distribution
@@ -105,6 +119,30 @@ class NormalizedModelNet40(Dataset):
         dataset_size = len(self.labels)
         
         class_weights = [1 - (class_/dataset_size) for class_ in bin_count]
+        
+        return class_weights
+    
+    
+    def adaptive_class_weights(self):
+        
+        bin_count = np.bincount(self.labels)
+        mean_count = np.mean(bin_count)
+        
+        dataset_size = len(self.labels)
+        
+        # class_weights = [1 - (class_/dataset_size) for class_ in bin_count]
+        
+        custom_sigmoid = lambda x: 2 * mean_count / (1 + np.exp(- 1 * x / mean_count))
+        # sigmoid = lambda x: 1 / (1 + np.exp(- 1 * x ))
+        
+        class_weights = []
+        for class_ in bin_count:
+            # factor = (class_ - mean_count) / mean_count
+            # class_weights.append((1 - (class_ / dataset_size)) * factor)
+            class_weights.append(custom_sigmoid(class_) / (mean_count + class_))
+            # class_weights.append(sigmoid(class_))
+        
+        # class_weights = [1 - (class_/dataset_size) for class_ in bin_count]
         
         return class_weights
     

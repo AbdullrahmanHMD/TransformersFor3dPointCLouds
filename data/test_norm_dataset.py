@@ -22,17 +22,33 @@ def plot_pcu(vector):
     plt.show()
     
 path = 'C:\\Users\\abooo\\Desktop\\new_dataset\\modelnet40_ply_hdf5_2048'
-dataset = NormalizedModelNet40(path, sample_size=1500, sampling_method='fps')
+dataset = NormalizedModelNet40(path, sample_size=512, sampling_method='fps')
+    
     
 
-x, y, y_txt = dataset[8]
+print(dataset.augmentation_count())
+print(dataset.class_distribution())
+print(dataset.adaptive_class_weights())
 
+# class_num = 32
+# class_indicies = dataset.class_indicies(class_num)
 
-print(dataset.class_distribution(), flush=True)
+# random_ind = np.random.choice(class_indicies, 5)
 
-print(y, flush=True)
-print(y_txt, flush=True)
+# for ind in random_ind:
+#     x, y, y_txt = dataset[ind]
+#     print(y_txt, flush=True)
+#     plot_pcu(x)
+# x, y, y_txt = dataset[423]
+# for ind in class_indicies:
+    # x, y, y_txt = dataset[ind]
+    # print(f'class: {y_txt} | class label: {y}')
 
-print()
-plot_pcu(x)
+# print(dataset.class_distribution(), flush=True)
+
+# print(y, flush=True)
+# print(y_txt, flush=True)
+
+# print()
+# plot_pcu(x)
 
