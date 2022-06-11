@@ -4,6 +4,7 @@ from random import sample
 import numpy as np
 import h5py
 from torch.utils.data import Dataset
+import torch
 
 
 
@@ -113,40 +114,66 @@ class NormalizedModelNet40(Dataset):
         return vec
     
 
-    def calculate_class_weights(self):
+    def class_weights(self):
         
         bin_count = np.bincount(self.labels)
         dataset_size = len(self.labels)
         
         class_weights = [1 - (class_/dataset_size) for class_ in bin_count]
-        
+        class_weights = torch.tensor(class_weights, dtype=torch.float32)
+        # class_weights = class_weights / class_weights.sum()
+        # class_weights = torch.tensor(bin_count, dtype=torch.float32)
+        # class_weights = class_weights / class_weights.sum()
+
+        # class_weights = 1.0 / class_weights
+        # class_weights = class_weights / class_weights.sum()
+
         return class_weights
     
     
-    def adaptive_class_weights(self):
+    def adaptive_class_weights(self, alpha):
+        # alpha is the spread value of the function.
+        # 0 < alpha <= inf.
+        # The less the alpha the more the spread.
         
         bin_count = np.bincount(self.labels)
-        mean_count = np.mean(bin_count)
+        median = np.mean(bin_count)
         
         dataset_size = len(self.labels)
-        
-        # class_weights = [1 - (class_/dataset_size) for class_ in bin_count]
-        
-        custom_sigmoid = lambda x: 2 * mean_count / (1 + np.exp(- 1 * x / mean_count))
-        # sigmoid = lambda x: 1 / (1 + np.exp(- 1 * x ))
-        
+
+        custom_sigmoid = lambda x: 2 * median / (1 + np.exp(- 1 * spread * x ))
+
+        weight_loss_function = lambda x: (np.sign(median - x) * np.power(np.tanh(np.power(np.power((median - x), 2), (alpha/2))), (1 / alpha)) + 1) / 2
+
         class_weights = []
         for class_ in bin_count:
-            # factor = (class_ - mean_count) / mean_count
-            # class_weights.append((1 - (class_ / dataset_size)) * factor)
-            class_weights.append(custom_sigmoid(class_) / (mean_count + class_))
-            # class_weights.append(sigmoid(class_))
+            class_weights.append(weight_loss_function(class_))
         
-        # class_weights = [1 - (class_/dataset_size) for class_ in bin_count]
-        
+        class_weights = torch.tensor(class_weights, dtype=torch.float32)
+        class_weights = class_weights / class_weights.sum()
+
         return class_weights
     
     
+# def adaptive_class_weights(self, spread):
+        
+#         bin_count = np.bincount(self.labels)
+#         median = np.median(bin_count)
+        
+#         dataset_size = len(self.labels)
+
+#         custom_sigmoid = lambda x: 2 * median / (1 + np.exp(- 1 * spread * x ))
+
+        
+#         class_weights = []
+#         for class_ in bin_count:
+#             class_weights.append(custom_sigmoid(class_) / (median + class_))
+        
+#         class_weights = torch.tensor(class_weights, dtype=torch.float32)
+#         class_weights = class_weights / class_weights.sum()
+
+#         return class_weights
+
     def class_indicies_distribution(self):
         indicies_distribution = {}
         labels = self.labels.reshape(-1)
