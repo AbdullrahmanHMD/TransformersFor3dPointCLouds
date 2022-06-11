@@ -45,7 +45,7 @@ def rotate_point_cloud(point_cloud):
     rotation_matrix = np.array([[cos, 0, sin],
                                 [0, 1, 0],
                                 [-sin, 0, cos]])
-    rotated_data = torch.matmul(point_cloud, torch.from_numpy(rotation_matrix))
+    rotated_data = np.dot(point_cloud, rotation_matrix)
     return rotated_data
 
 
@@ -63,7 +63,7 @@ def rotate_point_cloud_z(point_cloud):
     rotation_matrix = np.array([[cos, sin, 0],
                                 [-sin, cos, 0],
                                 [0, 0, 1]])
-    rotated_data = torch.matmul(point_cloud, torch.from_numpy(rotation_matrix))
+    rotated_data = np.dot(point_cloud, rotation_matrix)
     return rotated_data
 
 
@@ -74,7 +74,7 @@ def rotate_point_cloud_with_normal(normal_point_cloud):
         Output:
             N,6, rotated XYZ, normal point cloud
     '''
-    rotated_data = torch.from_numpy(normal_point_cloud)
+    rotated_data = normal_point_cloud
     shape_pc = normal_point_cloud[:,0:3]
     shape_normal = normal_point_cloud[:,3:6]
     rotated_data[:,0:3] = rotate_point_cloud(shape_pc.reshape((-1, 3)))
@@ -89,7 +89,7 @@ def rotate_perturbation_point_cloud_with_normal(normal_point_cloud, angle_sigma=
         Return:
           Nx3 array, rotated batch of point clouds
     """
-    rotated_data = torch.from_numpy(normal_point_cloud)
+    rotated_data = normal_point_cloud
     angles = np.clip(angle_sigma*np.random.randn(3), -angle_clip, angle_clip)
     Rx = np.array([[1,0,0],
                    [0,np.cos(angles[0]),-np.sin(angles[0])],
@@ -103,8 +103,8 @@ def rotate_perturbation_point_cloud_with_normal(normal_point_cloud, angle_sigma=
     R = np.dot(Rz, np.dot(Ry,Rx))
     shape_pc = normal_point_cloud[:,0:3]
     shape_normal = normal_point_cloud[:,3:6]
-    rotated_data[:,0:3] = torch.matmul(shape_pc.reshape((-1, 3)), torch.from_numpy(R))
-    rotated_data[:,3:6] = torch.matmul(shape_normal.reshape((-1, 3)), torch.from_numpy(R))
+    rotated_data[:,0:3] = np.dot(shape_pc.reshape((-1, 3)), R)
+    rotated_data[:,3:6] = np.dot(shape_normal.reshape((-1, 3)), R)
     return rotated_data
 
 
@@ -122,7 +122,7 @@ def rotate_point_cloud_by_angle(point_cloud, rotation_angle):
     rotation_matrix = np.array([[cosval, 0, sinval],
                                 [0, 1, 0],
                                 [-sinval, 0, cosval]])
-    rotated_data = torch.matmul(point_cloud, torch.from_numpy(rotation_matrix))
+    rotated_data = np.dot(point_cloud, rotation_matrix)
     return rotated_data
 
 
@@ -146,8 +146,8 @@ def rotate_point_cloud_by_angle_with_normal(normal_point_cloud, rotation_angle):
     shape_pc = normal_point_cloud[:,0:3]
     shape_normal = normal_point_cloud[:,3:6]
     
-    rotated_data[k,:,0:3] = torch.matmul(shape_pc.reshape((-1, 3)), torch.from_numpy(rotation_matrix))
-    rotated_data[k,:,3:6] = torch.matmul(shape_normal.reshape((-1,3)), torch.from_numpy(rotation_matrix))
+    rotated_data[k,:,0:3] = np.dot(shape_pc.reshape((-1, 3)), rotation_matrix)
+    rotated_data[k,:,3:6] = np.dot(shape_normal.reshape((-1,3)), rotation_matrix)
     
     return rotated_data
 
@@ -172,7 +172,7 @@ def rotate_perturbation_point_cloud(point_cloud, angle_sigma=0.06, angle_clip=0.
                    [0,0,1]])
     R = np.dot(Rz, np.dot(Ry,Rx))
     
-    rotated_data = torch.matmul(point_cloud.reshape((-1, 3)), torch.from_numpy(R))
+    rotated_data = np.dot(point_cloud.reshape((-1, 3)), R)
     return rotated_data
 
 
@@ -187,7 +187,7 @@ def jitter_point_cloud(point_cloud, sigma=0.01, clip=0.05):
     N, C = point_cloud.shape
     assert(clip > 0)
     jittered_data = np.clip(sigma * np.random.randn(N, C), -1 * clip, clip)
-    jittered_data = torch.from_numpy(jittered_data)
+    jittered_data = jittered_data
     jittered_data += point_cloud
     return jittered_data
 
@@ -202,7 +202,7 @@ def shift_point_cloud(point_cloud, shift_range=0.1):
     """
     N, C = point_cloud.shape
     shift = np.random.uniform(-shift_range, shift_range, (1,3))
-    point_cloud += torch.from_numpy(shift)
+    point_cloud += shift
     return point_cloud 
 
 

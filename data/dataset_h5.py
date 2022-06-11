@@ -4,7 +4,7 @@ from random import sample
 import numpy as np
 import h5py
 from torch.utils.data import Dataset
-import dataAugmentation 
+import dataAugmenter
 
 
 class NormalizedModelNet40(Dataset):
@@ -28,15 +28,18 @@ class NormalizedModelNet40(Dataset):
         
         
         self.dataset_path = dataset_path
+        self.aug_data_path = os.path.join(self.dataset_path, 'augmented_data.h5')
+
         self.partition = partition
         
         self.sample_size = sample_size
         self.sampling_method = sampling_method
         
         self.CLASS_MAPPING = dict(zip(range(0, len(self.CLASSES)), self.CLASSES))
-        
         self.data, self.labels = self.load_data()
-        self.labels = self.labels.reshape(-1)
+        
+        if self.need_augment():
+            self.generate_augmented_data()
     
     
     def __len__(self):
@@ -75,25 +78,48 @@ class NormalizedModelNet40(Dataset):
         return indicies
     
     
-    def _augment_data(self, data ):
+    def generate_augmented_data(self):
         
-        augmentation_nums = self.augnemtation_count()
+        self._augment_data()
+        self.save_to_h5()
+    
+    def need_augment(self):
+        return  os.path.exists(self.aug_data_path) == False
+        
+    
+    def _augment_data(self):
+        
+      
+        augmentation_nums = self.augmentation_count()
+        x, y = [], []
+
         for i, n in enumerate(augmentation_nums):
-            
             class_indices = self.class_indicies(i)
             N = len(class_indices)
             for _ in range(n):
                 random_idx = np.random.randint(0, N, 1)
-                point_cloud = data[random_idx]
+                point_cloud = self.data[random_idx]
                 rotated_data = dataAugmenter.rotate_point_cloud(point_cloud)
                 rotated_data = dataAugmenter.rotate_perturbation_point_cloud(rotated_data)
                 jittered_data = dataAugmenter.random_scale_point_cloud(rotated_data)
                 jittered_data = dataAugmenter.shift_point_cloud(jittered_data)
                 jittered_data = dataAugmenter.jitter_point_cloud(jittered_data)
                 rotated_data = jittered_data
-                data.append(rotated_data)
-       
+                x.append(rotated_data)
+                y.append(i)
+        self.data = np.append(self.data, x, axis=0)
+        self.labels = np.append(self.labels, y)
+
     
+    def save_to_h5(self):
+        """Writing data to an h5 file"""
+     
+        hf = h5py.File(self.aug_data_path, 'w')
+        hf.create_dataset('data', data=self.data)
+        hf.create_dataset('labels', data=self.labels)
+        hf.close()
+        
+        
     
     def class_distribution(self):
         distribution = np.bincount(self.labels)
@@ -105,15 +131,15 @@ class NormalizedModelNet40(Dataset):
         all_label = []
         
         for h5_name in glob.glob(os.path.join(self.dataset_path, 'ply_data_%s*.h5'%self.partition)):
-            f = h5py.File(h5_name)
+            f = h5py.File(h5_name, 'r')
             data = f['data'][:].astype('float32')
             label = f['label'][:].astype('int64')
             f.close()
             all_data.append(data)
             all_label.append(label)
-            
         all_data = np.concatenate(all_data, axis=0)
-        all_label = np.concatenate(all_label, axis=0)
+        all_label = np.concatenate(all_label , axis=0).reshape(-1)
+            
         return all_data, all_label
 
     
