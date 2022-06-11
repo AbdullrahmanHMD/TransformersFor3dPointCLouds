@@ -61,15 +61,38 @@ class NormalizedModelNet40(Dataset):
         return data, self.labels[index], self.CLASS_MAPPING[self.labels[index]]
     
     
-    def _augment_data(self, batch_data):
+    def augmentation_count(self):
+        # Returns the number of needed augmentation for each class.
+        data_dist = np.bincount(self.labels)
+        max_instance = np.max(data_dist)
         
-        rotated_data = dataAugmentation.rotate_point_cloud(batch_data)
-        rotated_data = dataAugmentation.rotate_perturbation_point_cloud(rotated_data)
-        jittered_data = dataAugmentation.random_scale_point_cloud(rotated_data[:,:,0:3])
-        jittered_data = dataAugmentation.shift_point_cloud(jittered_data)
-        jittered_data = dataAugmentation.jitter_point_cloud(jittered_data)
-        rotated_data[:,:,0:3] = jittered_data
-        return dataAugmentation.shuffle_points(rotated_data)
+        return max_instance - data_dist
+
+    
+    def class_indicies(self, class_num):
+        # Returns the instances indicies of a given class.
+        indicies = [i for i, x in enumerate(self.labels) if x == class_num]
+        return indicies
+    
+    
+    def _augment_data(self, data ):
+        
+        augmentation_nums = self.augnemtation_count()
+        for i, n in enumerate(augmentation_nums):
+            
+            class_indices = self.class_indicies(i)
+            N = len(class_indices)
+            for _ in range(n):
+                random_idx = np.random.randint(0, N, 1)
+                point_cloud = data[random_idx]
+                rotated_data = dataAugmenter.rotate_point_cloud(point_cloud)
+                rotated_data = dataAugmenter.rotate_perturbation_point_cloud(rotated_data)
+                jittered_data = dataAugmenter.random_scale_point_cloud(rotated_data)
+                jittered_data = dataAugmenter.shift_point_cloud(jittered_data)
+                jittered_data = dataAugmenter.jitter_point_cloud(jittered_data)
+                rotated_data = jittered_data
+                data.append(rotated_data)
+       
     
     
     def class_distribution(self):

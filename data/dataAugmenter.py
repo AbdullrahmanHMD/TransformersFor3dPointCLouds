@@ -1,6 +1,7 @@
 import os
 import sys
 import numpy as np
+import torch
 # import h5py
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
@@ -44,7 +45,7 @@ def rotate_point_cloud(point_cloud):
     rotation_matrix = np.array([[cos, 0, sin],
                                 [0, 1, 0],
                                 [-sin, 0, cos]])
-    rotated_data = torch.matmul(point_cloud, torch.from_numpy(rotation_matrix)))
+    rotated_data = torch.matmul(point_cloud, torch.from_numpy(rotation_matrix))
     return rotated_data
 
 
@@ -59,10 +60,10 @@ def rotate_point_cloud_z(point_cloud):
     rotation_angle = np.random.uniform() * 2 * np.pi
     cos = np.cos(rotation_angle)
     sin = np.sin(rotation_angle)
-    rotation_matrix = np.array([[cosval, sinval, 0],
-                                [-sinval, cosval, 0],
+    rotation_matrix = np.array([[cos, sin, 0],
+                                [-sin, cos, 0],
                                 [0, 0, 1]])
-    rotated_data = torch.matmul(point_cloud, torch.from_numpy(rotation_matrix)))
+    rotated_data = torch.matmul(point_cloud, torch.from_numpy(rotation_matrix))
     return rotated_data
 
 
@@ -155,9 +156,9 @@ def rotate_point_cloud_by_angle_with_normal(normal_point_cloud, rotation_angle):
 def rotate_perturbation_point_cloud(point_cloud, angle_sigma=0.06, angle_clip=0.18):
     """ Randomly perturb the point clouds by small rotations
         Input:
-          BxNx3 array, original batch of point clouds
+          Nx3 array, original batch of point clouds
         Return:
-          BxNx3 array, rotated batch of point clouds
+          Nx3 array, rotated batch of point clouds
     """
     angles = np.clip(angle_sigma*np.random.randn(3), -angle_clip, angle_clip)
     Rx = np.array([[1,0,0],
@@ -213,7 +214,7 @@ def random_scale_point_cloud(point_cloud, scale_low=0.8, scale_high=1.25):
         Return:
             Nx3 array, scaled batch of point clouds
     """
-    N, C = batch_data.shape
+    N, C = point_cloud.shape
     scale = np.random.uniform(scale_low, scale_high, 1)
     point_cloud *= scale
     return point_cloud
